@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration monitorInterval="30" status="debug">
+
+	<Appenders>
+		<Console name="appender-Console-all" target="SYSTEM_OUT">
+			<PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
+		</Console>
+
+		<File name="appender-smpp-db-cleaner" fileName="./logs/smppLogs/smpp_db_cleaner.log"
+			append="true">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
+			<Filters>
+				<ThresholdFilter level="error" onMatch="DENY"
+					onMismatch="NEUTRAL" />
+				<ThresholdFilter level="warn" onMatch="DENY"
+					onMismatch="NEUTRAL" />
+				<ThresholdFilter level="fatal" onMatch="DENY"
+					onMismatch="NEUTRAL" />
+				<ThresholdFilter level="info" onMatch="DENY"
+					onMismatch="NEUTRAL" />
+				<ThresholdFilter level="debug" onMatch="ACCEPT"
+					onMismatch="DENY" />
+			</Filters>
+		</File>
+		<File name="appender-smpp-db-status" fileName="./logs/smppLogs/smpp_requests_db_status.log"
+			append="true">
+			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
+			<Filters>
+				<ThresholdFilter level="warn" onMatch="DENY"
+					onMismatch="NEUTRAL" />
+				<ThresholdFilter level="error" onMatch="DENY"
+					onMismatch="NEUTRAL" />
+				<ThresholdFilter level="fatal" onMatch="DENY"
+					onMismatch="NEUTRAL" />
+				<ThresholdFilter level="info" onMatch="ACCEPT"
+					onMismatch="DENY" />
+				<ThresholdFilter level="debug" onMatch="DENY"
+					onMismatch="NEUTRAL" />
+			</Filters>
+		</File>
+	</Appenders>
+
+	<Loggers>
+		<Root level="DEBUG">
+			<AppenderRef ref="appender-Console-all" />
+		</Root>
+
+		<Logger name="smppDBCleanerLogger" additivity="false" level="DEBUG">
+			<AppenderRef ref="appender-smpp-db-cleaner" level="DEBUG" />
+		</Logger>
+		
+		<Logger name="smppDBCurrentStatus" additivity="false" level="INFO">
+			<AppenderRef ref="appender-smpp-db-status" level="INFO" />
+		</Logger>
+	</Loggers>
+</Configuration>
