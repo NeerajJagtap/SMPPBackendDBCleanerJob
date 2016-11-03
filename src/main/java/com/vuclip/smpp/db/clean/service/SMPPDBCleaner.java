@@ -29,7 +29,6 @@ public class SMPPDBCleaner {
 		String deleteRecsHQL = "Delete from smpp_data where talend_response = '200' and resp_status = '202' and modified_date <= (current_timestamp() - interval 2 hour)";
 		String requestsInLast2HoursHQL = "Select count(*) from smpp_data where modified_date >= (current_timestamp() - interval 2 hour)";
 		String failRequestsOverLast2hours = "Select count(*) from smpp_data where resp_status <> '202' and modified_date >= (current_timestamp() - interval 2 hour)";
-
 		String responseOKRequestsInLast2HoursHQL = "Select count(*) from smpp_data where resp_status = '202' and modified_date >= (current_timestamp() - interval 2 hour)";
 		String talendRespFailHQL = "Select count(*) from smpp_data where talend_response <> '200' and resp_status = '202' and modified_date >= (current_timestamp() - interval 2 hour)";
 		try {
@@ -37,28 +36,8 @@ public class SMPPDBCleaner {
 			session = sessionFactory.getCurrentSession();
 			session.beginTransaction();
 
-			// Log Request made in last 2 hours
-			query = session.createSQLQuery(requestsInLast2HoursHQL);
-			BigInteger requestsMade = (BigInteger) query.uniqueResult();
-			// Request failed by carrier in last 2 hours
-			query = session.createSQLQuery(failRequestsOverLast2hours);
-			BigInteger failRequestsToCarrier = (BigInteger) query.uniqueResult();
-			// Request success by carrier in last 2 hours
-			query = session.createSQLQuery(responseOKRequestsInLast2HoursHQL);
-			BigInteger successReqs = (BigInteger) query.uniqueResult();
-			// requests failed to talend in last 2 hours
-			query = session.createSQLQuery(talendRespFailHQL);
-			BigInteger talendNotReached = (BigInteger) query.uniqueResult();
-			if (smppCurrentBDStatus.isInfoEnabled()) {
-				smppCurrentBDStatus.info("==================== DB status in last 2 hours ==================");
-				smppCurrentBDStatus.info("Requests Made : " + requestsMade);
-				smppCurrentBDStatus.info("Failed from carrier : " + failRequestsToCarrier);
-				smppCurrentBDStatus.info("Successful from Carrier : " + successReqs);
-				smppCurrentBDStatus.info("Talend response not OK : " + talendNotReached);
-				smppCurrentBDStatus.info("Success Requests : " + (requestsMade.longValue()
-						- (failRequestsToCarrier.longValue() + talendNotReached.longValue())));
-			}
-
+			generateInfoLogs(session, requestsInLast2HoursHQL, failRequestsOverLast2hours,
+					responseOKRequestsInLast2HoursHQL, talendRespFailHQL);
 			// Delete Recs before currentTime - 2hours
 			query = session.createSQLQuery(deleteRecsHQL);
 			int result = query.executeUpdate();
@@ -84,6 +63,33 @@ public class SMPPDBCleaner {
 		}
 	}
 
+	private static void generateInfoLogs(Session session, String requestsInLast2HoursHQL,
+			String failRequestsOverLast2hours, String responseOKRequestsInLast2HoursHQL, String talendRespFailHQL)
+			throws Exception {
+		Query query;
+		// Log Request made in last 2 hours
+		query = session.createSQLQuery(requestsInLast2HoursHQL);
+		BigInteger requestsMade = (BigInteger) query.uniqueResult();
+		// Request failed by carrier in last 2 hours
+		query = session.createSQLQuery(failRequestsOverLast2hours);
+		BigInteger failRequestsToCarrier = (BigInteger) query.uniqueResult();
+		// Request success by carrier in last 2 hours
+		query = session.createSQLQuery(responseOKRequestsInLast2HoursHQL);
+		BigInteger successReqs = (BigInteger) query.uniqueResult();
+		// requests failed to talend in last 2 hours
+		query = session.createSQLQuery(talendRespFailHQL);
+		BigInteger talendNotReached = (BigInteger) query.uniqueResult();
+		if (smppCurrentBDStatus.isInfoEnabled()) {
+			smppCurrentBDStatus.info("==================== DB status in last 2 hours ==================");
+			smppCurrentBDStatus.info("Requests Made : " + requestsMade);
+			smppCurrentBDStatus.info("Failed from carrier : " + failRequestsToCarrier);
+			smppCurrentBDStatus.info("Successful from Carrier : " + successReqs);
+			smppCurrentBDStatus.info("Talend response not OK : " + talendNotReached);
+			smppCurrentBDStatus.info("Success Requests : "
+					+ (requestsMade.longValue() - (failRequestsToCarrier.longValue() + talendNotReached.longValue())));
+		}
+	}
+
 	public static SessionFactory createSessionFactory() {
 		Configuration configuration = new Configuration();
 		configuration.configure("hibernate-config.xml");
@@ -100,7 +106,6 @@ public class SMPPDBCleaner {
 
 			public void sessionFactoryClosed(SessionFactory factory) {
 				((StandardServiceRegistryImpl) serviceRegistry).destroy();
-
 			}
 		});
 		return configuration.buildSessionFactory(serviceRegistry);
